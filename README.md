@@ -12,7 +12,7 @@ Use the provided `_compile_zkbpp.sh` file to compile the program:
 The implementation was tested on CentOS 7.5 and by using Valgrind 3.13.0.
 
 ## Usage
-After compilation, the program can be called with following parameters:
+After compilation, the program can be used with the following parameters:
 
 `./zkboo_test <field_size> <num_branches> <field_type> <cipher_type> <print_result>`
 
