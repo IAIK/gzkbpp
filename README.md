@@ -14,14 +14,14 @@ The implementation was tested on CentOS 7.5 and by using Valgrind 3.13.0.
 ## Usage
 After compilation, the program can be called with following parameters:
 
-`./zkboo_test <field_size> <num_branches> <cipher> <field_type> <print_result>`
+`./zkboo_test <field_size> <num_branches> <field_type> <cipher_type> <print_result>`
 
 where
 
 * `field_size` specifies the field size in bits,
 * `num_branches` specifies the number of branches,
-* `cipher_type` specifies the cipher being used,
-* `field_type` specifies the type of the field (0 for prime field, 1 for binary field), and
+* `field_type` specifies the type of the field (0 for prime field, 1 for binary field),
+* `cipher_type` specifies the cipher being used, and
 * `print_result` specifies whether results should be printed to the console.
 
 
