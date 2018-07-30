@@ -36,10 +36,10 @@ New circuits can be implemented by adding three specific methods to the `Circuit
     This method is a direct evaluation of the specified circuit, without any multi-party computations, shares, or random numbers for the multiplications.
 3. `circuitInstance(.)`
 
-    The MPC version of the circuit is implemented in this method. The function pointers previously defined in `beforeSign(.)` and `beforeVerify(.)` have to be used here, because this method is called both during signature generation and signature verification.
+    The MPC version of the circuit is implemented in this method. The function pointers previously defined in `beforeSign(.)` and `beforeVerify(.)` have to be used here, because this method is called both during proof generation and proof verification.
 
 ### Circuit Gates
-A few circuit gates are already implemented. Common circuit gates include addition and multiplication, both with shared or constant values. Note that some circuit gates are implemented differently for signature generation and signature verification. If additional gates are needed, they can be added by using the same techniques found in e.g. `addSharedSign(.)` or `addSharedVerify(.)`.
+A few circuit gates are already implemented. Common circuit gates include addition and multiplication, both with shared or constant values. Note that some circuit gates are implemented differently for proof generation and proof verification. If additional gates are needed, they can be added by using the same techniques found in e.g. `addSharedSign(.)` or `addSharedVerify(.)`.
 
 ### Field Arithmetic
 The `BigIntLib` class includes methods for computations in a set of predefined finite fields, in particular prime fields and binary fields. New methods can easily be added for finite fields of different sizes. Currently, the Solinas reduction [1] is used for prime fields, and a fast word-wise reduction [2] is used for binary fields.
