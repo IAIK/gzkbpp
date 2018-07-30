@@ -30,7 +30,7 @@ where
 New circuits can be implemented by adding three specific methods to the `CircuitContainer` class (exchange "Instance" with the name of the circuit):
 1. `initInstance(.)`
 
-    This method initializes a new circuit. Typical values for block ciphers include the number of rounds or the number of branches for Feistel-based constructions. Any necessary precompution (e.g. round keys, round constants) should also be done in this method. Note that in ZKB++, each multiplication gate requires a set of random values, and therefore the number of multiplication gates must also be set in this method. Moreover, the necessary function pointers are also set in this method.
+    This method initializes a new circuit. Typical values for block ciphers include the number of rounds or the number of branches for Feistel-based constructions. Any necessary precompution (e.g. round keys, round constants) should also be done in this method. Note that in ZKB++, each multiplication gate requires a set of random values, and therefore the number of multiplication gates must also be set here. Moreover, the necessary function pointers are also set in this method.
 2. `directInstance(.)`
 
     This method is a direct evaluation of the specified circuit, without any multi-party computations, shares or random numbers for the multiplications.
