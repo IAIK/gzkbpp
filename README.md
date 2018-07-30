@@ -14,7 +14,7 @@ The implementation was tested on CentOS 7.5 and by using Valgrind 3.13.0.
 ## Usage
 After compilation, the program can be used with the following parameters:
 
-`./zkboo_test <field_size> <num_branches> <field_type> <cipher_type> <print_result>`
+`./zkbpp_test <field_size> <num_branches> <field_type> <cipher_type> <print_result>`
 
 where
 
@@ -44,7 +44,8 @@ A few circuit gates are already implemented. Common circuit gates include additi
 ### Field Arithmetic
 The `BigIntLib` class includes methods for computations in a set of predefined finite fields, in particular prime fields and binary fields. New methods can easily be added for finite fields of different sizes. Currently, the Solinas reduction [1] is used for prime fields, and a fast word-wise reduction [2] is used for binary fields.
 
-As an example circuit, [MiMC](https://eprint.iacr.org/2016/492.pdf) is included.
+As an example circuit, [MiMC](https://eprint.iacr.org/2016/492.pdf) is included. This circuit can be called with `./zkbpp_test 256 1 0 1 1`.
+
 
 [1] Jerome A. Solinas: Generalized Mersenne Numbers  
 [2] Darrel Hankerson, Alfred Menezes and Scott Vanstone: Guide to Elliptic Curve Cryptography
