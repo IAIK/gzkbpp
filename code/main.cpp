@@ -146,8 +146,8 @@ int main(int argc, char** argv)
   std::cout << "Number of branches: " << num_branches << std::endl;
   std::cout << "Number of cipher rounds: " << c->getCipherNumRounds() << std::endl;
   std::cout << "Number of cipher MUL gates: " << c->getCipherNumMulGates() << std::endl;
-  std::cout << "[(G)MiMC] Cycles per byte: " << (min_cycles / 32) << std::endl;
-  std::cout << "[(G)MiMC] Average time for direct call: " << time_direct_call << " ms" << std::endl;
+  std::cout << "[MiMC] Cycles per byte: " << (min_cycles / 32) << std::endl;
+  std::cout << "[MiMC] Average time for direct call: " << time_direct_call << " ms" << std::endl;
   std::cout << "--- TIME ---" << std::endl;
   std::cout << "Average time for gensign: " << time_gensign << " ms" << std::endl;
   std::cout << "Average time for sign: " << time_sign << " ms" << std::endl;
