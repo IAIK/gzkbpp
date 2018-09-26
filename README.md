@@ -44,7 +44,7 @@ A few circuit gates are already implemented. Common circuit gates include additi
 ### Field Arithmetic
 The `BigIntLib` class includes methods for computations in a set of predefined finite fields, in particular prime fields and binary fields. New methods can easily be added for finite fields of different sizes. Currently, the Solinas reduction [1] is used for prime fields, and a fast word-wise reduction [2] is used for binary fields.
 
-As an example circuit, [MiMC](https://eprint.iacr.org/2016/492.pdf) is included. This circuit can be called with `./zkbpp_test 256 1 0 1 1`.
+As an example circuit, [MiMC](https://eprint.iacr.org/2016/492.pdf) is included. This circuit can be tested with `./zkbpp_test 256 1 0 1 1`.
 
 
 [1] Jerome A. Solinas: Generalized Mersenne Numbers  
