@@ -30,11 +30,11 @@ SOFTWARE.
 #include <openssl/rand.h> // For RAND_bytes(.)
 #include <stdio.h>
 
-// Creates private value x
-void write_x(uchar* x, uint32 x_size) {
-  memset(x, 0, x_size);
-  for(uint32 i = 0; i < x_size; i++) {
-    x[i] = (uchar)(i); // Write some values
+// Creates plaintext value
+void write_plaintext(uchar* plaintext, uint32 plaintext_size) {
+  memset(plaintext, 0, plaintext_size);
+  for(uint32 i = 0; i < plaintext_size; i++) {
+    plaintext[i] = (uchar)(i); // Write some values
   }
 }
 
@@ -71,10 +71,10 @@ int main(int argc, char** argv)
   uint32 cipher_type = atoi(argv[4]);
   bool print_result = (bool)(atoi(argv[5]));
 
-  uchar x[value_size];
+  uchar plaintext[value_size];
   uchar y[value_size];
-  RAND_bytes(x, value_size);
-  //write_x(x, value_size); // DETERMINISTIC FOR TESTING!
+  RAND_bytes(plaintext, value_size);
+  //write_plaintext(plaintext, value_size); // DETERMINISTIC FOR TESTING!
   uint32 party_size = 3;
   uint32 zkbpp_iterations = 438; // This should be 438 later
   
@@ -86,7 +86,7 @@ int main(int argc, char** argv)
   std::string instance_name = "(" + std::to_string(field_bits) + ", " + std::to_string(num_branches) + ", " + std::to_string(c->getCipherNumRounds()) + ")";
   std::string instance_name_sage = c->getCipherName() + "-" + instance_name;
 
-  c->directEncryption(x, y);
+  c->directEncryption(plaintext, y);
 
   ZKBPP* zkbpp = new ZKBPP();
   zkbpp->init(party_size, zkbpp_iterations, c, print_result);
@@ -102,10 +102,10 @@ int main(int argc, char** argv)
   bool success;
   for(uint32 i = 0; i < num_runs; i++) {
     //c->randomizeKey();
-    //c->directEncryption(x, y);
+    //c->directEncryption(plaintext, y);
 
-    p = zkbpp->sign(x);
-    success = zkbpp->verify(p, y);
+    p = zkbpp->sign(plaintext);
+    success = zkbpp->verify(p, plaintext, y);
     total_gensign += zkbpp->getLastGenSignNS();
     total_sign += zkbpp->getLastSignNS();
     total_genverify += zkbpp->getLastGenVerifyNS();
@@ -114,12 +114,12 @@ int main(int argc, char** argv)
     total_circuit_verify += c->getLastCircuitVerifyNS(); // Last circuit execution of each run
   }
 
-  // Testing direct encryption
+  // Testing direct function
   uint64 min_cycles = 0xFFFFFFFF;
   uint64 total_direct_call = 0;
   for(uint32 i = 0; i < num_runs; i++) {
     c->randomizeKey();
-    c->directEncryption(x, y);
+    c->directEncryption(plaintext, y);
     if(c->getLastDirectCallCycles() < min_cycles) min_cycles = c->getLastDirectCallCycles();
     total_direct_call += c->getLastDirectCallNS();
   }
@@ -146,8 +146,8 @@ int main(int argc, char** argv)
   std::cout << "Number of branches: " << num_branches << std::endl;
   std::cout << "Number of cipher rounds: " << c->getCipherNumRounds() << std::endl;
   std::cout << "Number of cipher MUL gates: " << c->getCipherNumMulGates() << std::endl;
-  std::cout << "[MiMC] Cycles per byte: " << (min_cycles / 32) << std::endl;
-  std::cout << "[MiMC] Average time for direct call: " << time_direct_call << " ms" << std::endl;
+  std::cout << "[Cipher] Cycles per byte: " << (min_cycles / 32) << std::endl;
+  std::cout << "[Cipher] Average time for direct call: " << time_direct_call << " ms" << std::endl;
   std::cout << "--- TIME ---" << std::endl;
   std::cout << "Average time for gensign: " << time_gensign << " ms" << std::endl;
   std::cout << "Average time for sign: " << time_sign << " ms" << std::endl;
@@ -168,7 +168,7 @@ int main(int argc, char** argv)
   else
     std::cout << "Result: !!!!!!!!!! REJECT !!!!!!!!!!"  << std::endl;
 
-  // Print table for LaTeX (something like: "{{\texttt {Cipher-256-64}}} & {<number> <unit>} & {<number> <unit>} & {<number> <unit>} \\" for each instance (here for this one))
+  // Print table for LaTeX (something like: "{{\texttt {Scheme-N-n}}} & {<number> <unit>} & {<number> <unit>} & {<number> <unit>} \\" for each instance (here for this one))
   // | Scheme Definition | GenSign time (ms) | Sign time (ms) | GenVerify Time (ms) | Verify time (ms) | View size (bits) | Signature size (KB) |
   //printf("{{\\texttt {%s}}} & {%.2f ms} & {%.2f ms} & {%d bits} & {\\({\\approx}\\) %d KB} \\\\\n",
   printf("& \\(%s\\) & \\(%.2f\\) ms & \\(%.2f\\) ms & \\(%.2f\\) ms & \\(%.2f\\) ms & \\(%d\\) bits & \\(\\approx %d\\) KB \\\\ \\cline{2-8}\n",

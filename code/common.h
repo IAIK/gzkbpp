@@ -1,4 +1,3 @@
-// Common includes and definitions between files
 /*
 MIT License
 
@@ -23,6 +22,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
+// Common includes and definitions between files
 #ifndef COMMON_H
 #define COMMON_H
 
@@ -43,7 +43,6 @@ typedef struct {
 // This struct is returned from the Circuit to ZKBPP::sign(.)
 typedef struct {
   uchar* x_3_;
-  uchar** key_shares_;
   uchar* random_tapes_;
   uchar* random_tapes_hashs_;
   uchar** views_;

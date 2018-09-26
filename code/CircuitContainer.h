@@ -38,7 +38,7 @@ public:
   void initCipher(uint32 cipher_type);
   void initMiMC();
   void runSign(uchar* x, SignData* sign_data);
-  void runVerify(Proof* p, uchar* y, VerifyData* verify_data, uint32 iteration);
+  void runVerify(Proof* p, uchar* x, uchar* y, VerifyData* verify_data, uint32 iteration);
   void directEncryption(uchar* x, uchar* y); // Wrapper
   void directMiMC(uchar* x, uchar* y);
   void getParams(uint32* value_size, uint32* random_tape_size, uint32* key_size, uint32* gate_size, uint32* num_view_gates);
@@ -67,16 +67,18 @@ private:
   uint32 hash_size_;
   uint32 num_rounds_;
   uint32 num_mul_gates_;
+  uint32 num_intermediate_results_;
   uint32 num_view_gates_;
   uint32 num_feistel_branches_; // Used for Feistel networks
   word** round_constants_; // Used for circuits which require round constants
   uint32 num_round_constants_;
+  word** intermediate_results_; // Intermediate multiplication results of the unshared implementation
   uchar* value_;
   uchar** value_shares_; // Should always be party_size entries with size value_size
-  //word*** value_shares_f_;
   uchar* key_;
   uchar** key_shares_;
-  //word*** key_shares_f_;
+  word* matrix_1_;
+  word* matrix_2_;
   word** random_numbers_;
   word* squaring_precomp_;
   std::vector<uint32> feistel_branch_indices_;
@@ -88,6 +90,7 @@ private:
   uint32 e_; // e chosen be ZKB++ protocol
   uint32 iteration_; // iteration number in the ZKB++ protocol (maybe better to just pass the right data from the outside?)
   uint32 current_mul_gate_;
+  uint32 current_intermediate_result_;
 
   // Helpers
   uint32 last_circuit_sign_time_;
@@ -100,14 +103,14 @@ private:
   void (CircuitContainer::*circuit_function_)(word* value_shares_f, word* key_shares_f, uint32 party_size);
   void (CircuitContainer::*add_c_shared_function_)(word* a_shares, word* b, word* c_shares);
   void (CircuitContainer::*add_shared_function_)(word* a_shares, word* b_shares, word* c_shares);
+  void (CircuitContainer::*sub_shared_function_)(word* a_shares, word* b_shares, word* c_shares);
   void (CircuitContainer::*mul_shared_function_)(word* a_shares, word* b_shares, word* c_shares);
   void (CircuitContainer::*squ_shared_function_)(word* a_shares, word* b_shares, word* c_shares);
   void (CircuitContainer::*squ_shared_experimental_function_)(word* a_shares, word* b_shares, word* c_shares);
   void (CircuitContainer::*cube_shared_function_)(word* a_shares, word* c_shares); // b_shares probably not needed
-  void (CircuitContainer::*calc_last_share_function_)(uchar* share_3, uchar* value, uchar* share_1, uchar* share_2); /* DEPRECATED */
-  void (CircuitContainer::*fill_value_shares_function_)(word* shares_words, uchar** shares, uint32 party_size); /* DEPRECATED */
-  void (CircuitContainer::*prepare_shares_field_sign_function_)(uchar* x, void* key_shares, word* value_shares_f, word* key_shares_f);
-  void (CircuitContainer::*prepare_shares_field_verify_function_)(uchar** key_shares, word* value_shares_f, word* key_shares_f);
+  void (CircuitContainer::*gen_new_subkeys_shared_function_)(word* key_shares_f, word* key_share_f_temp, uint32 num_rounds_remaining, uint32 party_size);
+  void (CircuitContainer::*prepare_shares_field_sign_function_)(uchar* x, word* value_shares_f, word* key_shares_f);
+  void (CircuitContainer::*prepare_shares_field_verify_function_)(word* value_shares_f, word* key_shares_f);
   void (CircuitContainer::*output_shares_to_bytes_function_)(word* output_shares, uint32 party_size);
   void (CircuitContainer::*verify_calc_last_share_function_)(uchar* y, word* value_shares_f);
 
@@ -122,7 +125,7 @@ private:
   void initMatrixMPrime();
   void beforeSign(uchar* x, SignData* sign_data, word* value_shares_f, word* key_shares_f);
   void afterSign(word* value_shares_f);
-  void beforeVerify(Proof* p, uchar* y, VerifyData* verify_data, uchar** key_shares, word* value_shares_f, word* key_shares_f, uint32 iteration);
+  void beforeVerify(Proof* p, uchar* x, uchar* y, VerifyData* verify_data, uchar** key_shares, word* value_shares_f, word* key_shares_f, uint32 iteration);
   void afterVerify(uchar* y, word* value_shares_f);
 
   // Circuit
@@ -130,14 +133,21 @@ private:
   void destroyRoundConstants();
   void prepareRandomNumbers(uchar** random_tapes, uint32 party_size);
   void destroyRandomNumbers();
+  void generateNewSubkeys(word* key_shares_f, word* key_share_f_temp, uint32 num_rounds_remaining);
+  void generateNewSubkeysSharedPF(word* key_shares_f, word* key_share_f_temp, uint32 num_rounds_remaining, uint32 party_size);
+  void generateNewSubkeysSharedBF(word* key_shares_f, word* key_share_f_temp, uint32 num_rounds_remaining, uint32 party_size);
   void addSharedSign(word* a_shares, word* b_shares, word* c_shares);
+  void subSharedSign(word* a_shares, word* b_shares, word* c_shares);
   void addSharedVerify(word* a_shares, word* b_shares, word* c_shares);
+  void subSharedVerify(word* a_shares, word* b_shares, word* c_shares);
   void addCSharedSign(word* a_shares, word* b, word* c_shares);
   void addCSharedVerify(word* a_shares, word* b, word* c_shares);
   void mulSharedSign(word* a_shares, word* b_shares, word* c_shares);
   void mulSharedVerify(word* a_shares, word* b_shares, word* c_shares);
   void squSharedSign(word* a_shares, word* b_shares, word* c_shares);
   void squSharedVerify(word* a_shares, word* b_shares, word* c_shares);
+  void squSharedExperimental3Sign(word* a_shares, word* b_shares, word* c_shares);
+  void squSharedExperimental3Verify(word* a_shares, word* b_shares, word* c_shares);
   void squSharedExperimental17Sign(word* a_shares, word* b_shares, word* c_shares);
   void squSharedExperimental17Verify(word* a_shares, word* b_shares, word* c_shares);
   void squSharedExperimental33Sign(word* a_shares, word* b_shares, word* c_shares);
@@ -147,21 +157,13 @@ private:
   void copyShares(word* from_shares, word* to_shares, uint32 party_size);
 
   // Additional calculations
-  void calcLastShareDefault(uchar* share_3, uchar* value, uchar* share_1, uchar* share_2); /* DEPRECATED */
-  void calcLastShareFeistel(uchar* share_3, uchar* value, uchar* share_1, uchar* share_2); /* DEPRECATED */
-  void fillValueSharesDefault(word* shares_words, uchar** shares, uint32 party_size); // /* DEPRECATED */
-  void fillValueSharesFeistel(word* shares_words, uchar** shares, uint32 party_size); // /* DEPRECATED */
-  void prepareSharesFieldSign(uchar* x, void* key_shares, word* value_shares_f, word* key_shares_f);
-  void prepareSharesFieldSign4B(uchar* x, void* key_shares, word* value_shares_f, word* key_shares_f);
-  void prepareSharesFieldSignGeneric(uchar* x, void* key_shares, word* value_shares_f, word* key_shares_f);
-  void prepareSharesFieldVerify(uchar** key_shares, word* value_shares_f, word* key_shares_f);
-  void prepareSharesFieldVerify4B(uchar** key_shares, word* value_shares_f, word* key_shares_f);
-  void prepareSharesFieldVerifyGeneric(uchar** key_shares, word* value_shares_f, word* key_shares_f);
+  void prepareSharesFieldSign(uchar* x, word* value_shares_f, word* key_shares_f);
+  void prepareSharesFieldSignGeneric(uchar* x, word* value_shares_f, word* key_shares_f);
+  void prepareSharesFieldVerify(word* value_shares_f, word* key_shares_f);
+  void prepareSharesFieldVerifyGeneric(word* value_shares_f, word* key_shares_f);
   void outputSharesToBytes(word* output_shares, uint32 party_size);
-  void outputSharesToBytes4B(word* output_shares, uint32 party_size);
   void outputSharesToBytesGeneric(word* output_shares, uint32 party_size);
   void verifyCalcLastShare(uchar* y, word* value_shares_f);
-  void verifyCalcLastShare4B(uchar* y, word* value_shares_f);
   void verifyCalcLastShareGeneric(uchar* y, word* value_shares_f);
 
   // Util

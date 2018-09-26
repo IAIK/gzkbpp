@@ -31,7 +31,7 @@ public:
   ~ZKBPP();
   void init(uint32 party_size, uint32 num_iterations, CircuitContainer* cc, bool print_result = true);
   Proof* sign(uchar* x);
-  bool verify(Proof* p, uchar* y);
+  bool verify(Proof* p, uchar* x, uchar* y);
   uint64 getLastGenSignNS();
   uint32 getLastSignNS();
   uint64 getLastGenVerifyNS();
@@ -66,9 +66,9 @@ private:
   // Allocation and deletion of structs
   View* createView();
   void destroyView(View* v);
-  SignData* createSignData(void* sign_views_buffer, void* random_tapes_buffer, void* key_shares_random_buffer, void* key_share_last_buffer, uint32 iteration);
+  SignData* createSignData(void* sign_views_buffer, void* random_tapes_buffer, uint32 iteration);
   void destroySignData(SignData* sign_data);
-  ContainerSignData* createContainerSignData(void* sign_views_buffer, void* random_tapes_buffer, void* key_shares_random_buffer, void* key_share_last_buffer);
+  ContainerSignData* createContainerSignData(void* sign_views_buffer, void* random_tapes_buffer);
   void destroyContainerSignData(ContainerSignData* csd);
   ContainerVerifyData* createContainerVerifyData(void* verify_views_buffer);
   void destroyContainerVerifyData(ContainerVerifyData* cvd);

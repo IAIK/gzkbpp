@@ -1,4 +1,3 @@
-// Functions for operations in prime fields and binary fields
 /*
 MIT License
 
@@ -23,6 +22,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
+// Functions for operations in prime fields and binary fields
 #ifndef BIGINTLIB_H
 #define BIGINTLIB_H
 

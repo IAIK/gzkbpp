@@ -74,12 +74,8 @@ Proof* ZKBPP::sign(uchar* x) {
 
   // Maybe use alignas(8) or alignas(32) for the arrays below
   // Create buffer for views
-  //uchar buffer_all[this->num_iterations_ * this->party_size_ * this->view_size_ +
-  //  this->num_iterations_ * this->party_size_ * this->circuit_value_size_ +
-  //  this->num_iterations_ * (this->party_size_ - 1) * this->circuit_key_size_];
   uchar* buffer_all = new uchar[this->num_iterations_ * this->party_size_ * this->view_size_ + // views
-    this->num_iterations_ * this->party_size_ * this->random_tape_size_ + // random tapes
-    this->num_iterations_ * (this->party_size_ - 1) * this->circuit_key_size_]; // random key shares
+    this->num_iterations_ * this->party_size_ * this->random_tape_size_]; // random tapes
   //uchar sign_views_buffer[this->num_iterations_][this->party_size_][this->view_size_];
   uchar* sign_views_buffer = buffer_all;
   memset(sign_views_buffer, 0, this->num_iterations_ * this->party_size_ * this->view_size_);
@@ -91,18 +87,9 @@ Proof* ZKBPP::sign(uchar* x) {
   BigIntLib::FillRandom(random_tapes_buffer, (this->circuit_)->getKey(), this->num_iterations_ * this->party_size_ * this->random_tape_size_);
   //BigIntLib::Print(random_tapes_buffer, this->num_iterations_ * this->party_size_ * this->circuit_value_size_);
 
-  // Create buffer for random key shares
-  //uchar key_shares_random_buffer[this->num_iterations_][this->party_size_ - 1][this->circuit_key_size_];
-  uchar* key_shares_random_buffer = random_tapes_buffer + (this->num_iterations_ * this->party_size_ * this->random_tape_size_);
-  //RAND_bytes((uchar*)key_shares_random_buffer, this->num_iterations_ * (this->party_size_ - 1) * this->circuit_key_size_);
-  BigIntLib::FillRandom(key_shares_random_buffer, (this->circuit_)->getKey(), this->num_iterations_ * (this->party_size_ - 1) * this->circuit_key_size_);
-  //BigIntLib::Print(key_shares_random_buffer, this->num_iterations_ * (this->party_size_ - 1) * this->circuit_key_size_);
-
-  // Create buffer for last key share (written by circuit)
-  uchar key_share_last_buffer[this->num_iterations_][this->circuit_key_size_];
-  memset(key_share_last_buffer, 0, this->num_iterations_ * this->circuit_key_size_);
+  // Create data
   uint32 k_View_size = this->random_tape_size_ + (this->circuit_num_view_gates_ * this->circuit_gate_size_);
-  ContainerSignData* csd = this->createContainerSignData(sign_views_buffer, random_tapes_buffer, key_shares_random_buffer, key_share_last_buffer);
+  ContainerSignData* csd = this->createContainerSignData(sign_views_buffer, random_tapes_buffer);
   ContainerCD* ccd = this->createContainerCD(k_View_size, this->party_size_);
   ContainerA* ca = this->createContainerA();
   auto gensign_stop = std::chrono::high_resolution_clock::now();
@@ -150,7 +137,7 @@ Proof* ZKBPP::sign(uchar* x) {
   return p;
 }
 
-bool ZKBPP::verify(Proof* p, uchar* y) {
+bool ZKBPP::verify(Proof* p, uchar* x, uchar* y) {
 
   //this->printProof(p, false);
   auto genverify_start = std::chrono::high_resolution_clock::now();
@@ -175,7 +162,7 @@ bool ZKBPP::verify(Proof* p, uchar* y) {
   for(uint32 i = 0; i < this->num_iterations_; i++) {
     // Call the circuit, pass VerifyData and let the circuit fill the chosen View
     //this->circuit_->evaluateVerify(p, y, cvd->vds_[i], i); // Maybe better to pass only relevant z_i and not the entire p
-    (this->circuit_->runVerify)(p, y, cvd->vds_[i], i);
+    (this->circuit_->runVerify)(p, x, y, cvd->vds_[i], i);
     // Add to CD and A
     this->fillCDVerify(ccd_verify, i, p, cvd->vds_[i], hash_data);
     this->fillAVerify(ca_verify, i, p, cvd->vds_[i], ccd_verify);
@@ -237,13 +224,6 @@ View* ZKBPP::createView() {
   View* v = new View;
   v->values_ = new uchar[this->view_size_];
   memset(v->values_, 0, this->view_size_);
-  /*
-  v->values_ = new uchar*[this->circuit_num_view_gates_];
-  for(uint32 i = 0; i < this->circuit_num_view_gates_; i++) {
-    v->values_[i] = new uchar[this->circuit_gate_size_];
-    memset(v->values_[i], 0, this->circuit_gate_size_);
-  }
-  */
   v->num_gates_ = this->circuit_num_view_gates_;
   v->gate_size_ = this->circuit_gate_size_;
   return v;
@@ -260,17 +240,11 @@ void ZKBPP::destroyView(View* v) {
   delete v;
 }
 
-SignData* ZKBPP::createSignData(void* sign_views_buffer, void* random_tapes_buffer, void* key_shares_random_buffer, void* key_share_last_buffer, uint32 iteration) {
+SignData* ZKBPP::createSignData(void* sign_views_buffer, void* random_tapes_buffer, uint32 iteration) {
   uchar (*pointer_1)[this->party_size_][this->view_size_] = (uchar (*)[this->party_size_][this->view_size_]) sign_views_buffer;
-  uchar (*pointer_2)[this->party_size_ * this->circuit_value_size_] = (uchar (*)[this->party_size_ * this->circuit_value_size_]) random_tapes_buffer;
-  uchar (*pointer_3)[this->party_size_ - 1][this->circuit_key_size_] = (uchar (*)[this->party_size_ - 1][this->circuit_key_size_]) key_shares_random_buffer;
-  uchar (*pointer_4)[this->circuit_key_size_] = (uchar (*)[this->circuit_key_size_]) key_share_last_buffer;
+  uchar (*pointer_2)[this->party_size_ * this->random_tape_size_] = (uchar (*)[this->party_size_ * this->random_tape_size_]) random_tapes_buffer;
   SignData* sign_data = new SignData;
   sign_data->x_3_ = new uchar[this->circuit_value_size_];
-  sign_data->key_shares_ = new uchar*[this->party_size_];
-  sign_data->key_shares_[0] = pointer_3[iteration][0];
-  sign_data->key_shares_[1] = pointer_3[iteration][1];
-  sign_data->key_shares_[2] = pointer_4[iteration];
   sign_data->y_shares_ = new uchar[this->party_size_ * this->circuit_value_size_];
   //sign_data->random_tapes_ = new uchar*[this->party_size_];
   sign_data->random_tapes_ = pointer_2[iteration];
@@ -283,48 +257,12 @@ SignData* ZKBPP::createSignData(void* sign_views_buffer, void* random_tapes_buff
   sign_data->views_[1] = pointer_1[iteration][1];
   sign_data->views_[2] = pointer_1[iteration][2];
   
-  /*
-  std::cout << "view size: " << this->view_size_ << std::endl;
-  sign_data->views_ = (uchar*)(pointer_1[iteration]);
-  std::cout << "Address of pointer_1[iteration][0]: " << &(pointer_1[iteration][0]) << std::endl;
-  std::cout << "+ view_size: 0x" << std::hex << ((uint64)(&(pointer_1[iteration][0])) + this->view_size_) << std::dec << std::endl;
-  std::cout << "Address of pointer_1[iteration][1]: " << &(pointer_1[iteration][1]) << std::endl;
-  std::cout << "Address of pointer_1[iteration][2]: " << &(pointer_1[iteration][2]) << std::endl;
-  */
-
-
-  //for(uint32 i = 0; i < this->party_size_; i++) {
-    //sign_data->key_shares_[i] = new uchar[this->circuit_key_size_];
-    //sign_data->y_shares_[i] = new uchar[this->circuit_value_size_];
-    //sign_data->random_tapes_[i] = new uchar[this->random_tape_size_];
-    //sign_data->random_tapes_[i] = pointer_2[iteration][i];
-    //RAND_bytes(sign_data->random_tapes_[i], this->random_tape_size_); // Initialize random tapes using OpenSSL RAND_bytes(.) function
-    //sign_data->views_[i] = pointer_1[iteration][i];
-    //sign_data->views_[i] = new uchar[this->view_size_];
-    //memset(sign_data->views_[i], 0, this->view_size_);
-  //}
-
-  //for(uint32 i = 0; i < this->party_size_ - 1; i++) {
-    //sign_data->random_tapes_hashs_[i] = new uchar[this->hash_size_];
-    //SHA256Dash(sign_data->random_tapes_hashs_[i], sign_data->random_tapes_ + (i * this->random_tape_size_), this->random_tape_size_);
-  //}
   sign_data->y_ = new uchar[this->circuit_value_size_];
   return sign_data;
 }
 
 void ZKBPP::destroySignData(SignData* sign_data) {
   delete[] sign_data->x_3_;
-  //for(uint32 i = 0; i < this->party_size_; i++) {
-    //delete[] sign_data->key_shares_[i];
-    //delete[] sign_data->y_shares_[i];
-    //delete[] sign_data->random_tapes_[i];
-    //if(sign_data->views_[i] != NULL) this->destroyView(sign_data->views_[i]); // z_i might have "taken" this view and set it to NULL here
-    //delete[] sign_data->views_[i];
-  //}
-  //for(uint32 i = 0; i < this->party_size_ - 1; i++) {
-    //delete[] sign_data->random_tapes_hashs_[i];
-  //}
-  delete[] sign_data->key_shares_;
   delete[] sign_data->y_shares_;
   //delete[] sign_data->random_tapes_;
   delete[] sign_data->random_tapes_hashs_;
@@ -351,11 +289,11 @@ void ZKBPP::destroyVerifyData(VerifyData* verify_data) {
   delete verify_data;
 }
 
-ContainerSignData* ZKBPP::createContainerSignData(void* sign_views_buffer, void* random_tapes_buffer, void* key_shares_random_buffer, void* key_share_last_buffer) {
+ContainerSignData* ZKBPP::createContainerSignData(void* sign_views_buffer, void* random_tapes_buffer) {
   ContainerSignData* csd = new ContainerSignData;
   csd->sds_ = new SignData*[this->num_iterations_];
   for(uint32 i = 0; i < this->num_iterations_; i++) {
-    csd->sds_[i] = this->createSignData(sign_views_buffer, random_tapes_buffer, key_shares_random_buffer, key_share_last_buffer, i);
+    csd->sds_[i] = this->createSignData(sign_views_buffer, random_tapes_buffer, i);
   }
   return csd;
 }
@@ -557,13 +495,6 @@ void ZKBPP::fillCDSign(ContainerCD* ccd, uint32 iteration, SignData* sign_data, 
   for(uint32 i = 0; i < this->party_size_; i++) {
     //uint32 offset = 0;
     memcpy(hash_data, sign_data->random_tapes_ + (i * this->random_tape_size_), this->random_tape_size_);
-    //offset += this->random_tape_size_;
-    /*
-    for(uint32 j = 0; j < this->circuit_num_view_gates_; j++) {
-      memcpy(hash_data + offset, sign_data->views_[i]->values_[j], this->circuit_gate_size_);
-      offset += this->circuit_gate_size_;
-    }
-    */
     memcpy(hash_data + this->random_tape_size_, sign_data->views_[i], this->view_size_);
     //memcpy(hash_data + this->random_tape_size_, sign_data->views_ + (i * this->view_size_), this->view_size_);
     // Build hash and store in iteration's C
@@ -589,13 +520,6 @@ void ZKBPP::fillCDVerify(ContainerCD* ccd, uint32 iteration, Proof* p, VerifyDat
   for(uint32 i = 0; i < (this->party_size_ - 1); i++) {
     //uint32 offset = 0;
     memcpy(hash_data, r_tapes_temp[i], this->random_tape_size_);
-    //offset += this->random_tape_size_;
-    /*
-    for(uint32 j = 0; j < this->circuit_num_view_gates_; j++) {
-      memcpy(hash_data + offset, views_temp[i]->values_[j], this->circuit_gate_size_);
-      offset += this->circuit_gate_size_;
-    }
-    */
     memcpy(hash_data + this->random_tape_size_, views_temp[i], this->view_size_);
     // Build hash and store in iteration's C
     this->SHA256Prime((ccd->Cs_[i][iteration])->H_k_View_, hash_data, hash_data_size);
@@ -677,10 +601,6 @@ void ZKBPP::fillProof(Proof* p, uint32 iteration, SignData* sign_data, Container
     (p->zs_[iteration])->k_1_hash_ = new uchar[this->hash_size_];
     memcpy((p->zs_[iteration])->k_1_hash_, sign_data->random_tapes_hashs_, this->hash_size_);
   }
-
-  // Key shares
-  memcpy((p->zs_[iteration])->key_shares_[0], sign_data->key_shares_[e], this->circuit_key_size_);
-  memcpy((p->zs_[iteration])->key_shares_[1], sign_data->key_shares_[(e + 1) % this->party_size_], this->circuit_key_size_);
 
   // y share
   memcpy((p->zs_[iteration])->y_share_, sign_data->y_shares_ + (((e + 1) % this->party_size_) * this->circuit_value_size_), this->circuit_value_size_);
