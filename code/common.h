@@ -129,4 +129,35 @@ typedef struct {
 // Forward declarations
 class Circuit;
 
+// OSX definitions
+#ifdef __APPLE__
+
+#include <sys/types.h>
+#include <sys/sysctl.h>
+
+#include <mach/mach_init.h>
+#include <mach/thread_act.h>
+#include <mach/mach_port.h>
+
+#define SYSCTL_CORE_COUNT   "machdep.cpu.core_count"
+
+typedef struct cpu_set {
+  uint32_t    count;
+} cpu_set_t;
+
+static inline void
+CPU_ZERO(cpu_set_t *cs) { cs->count = 0; }
+
+static inline void
+CPU_SET(int num, cpu_set_t *cs) { cs->count |= (1 << num); }
+
+static inline int
+CPU_ISSET(int num, cpu_set_t *cs) { return (cs->count & (1 << num)); }
+
+extern int sched_getaffinity      (pid_t        pid, size_t cpu_size, cpu_set_t *cpu_set);
+extern int pthread_setaffinity_np (pthread_t thread, size_t cpu_size, cpu_set_t *cpu_set);
+extern int sched_setaffinity      (pthread_t thread, size_t cpu_size, cpu_set_t *cpu_set);
+
+#endif // APPLE
+
 #endif // COMMON_H
